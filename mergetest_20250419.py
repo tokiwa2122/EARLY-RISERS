@@ -124,10 +124,17 @@ if st.session_state["show_form"] and not st.session_state["show_result"]:
 
 if st.session_state.get("show_form"):
 
-   if st.button("おすすめ趣味を探す"):
+   # if st.button("おすすめ趣味を探す"):
 
     # 設問1〜5の値（ここではすでに上で取得済みの変数をそのまま使う）
     # age, gender, address, social_style, start_preference ← 既存変数
+
+  if st.session_state.get("show_form"):  # ← ここはフォーム表示のトリガー
+    age = st.session_state.get("age")         # ← ここで各値を取得
+    gender = st.session_state.get("gender")
+    address = st.session_state.get("address")
+    social_style = st.session_state.get("social_style")
+    start_preference = st.session_state.get("start_preference")
 
     # 設問6〜8（複数選択）
     body_goals = [label for label, key in {
@@ -257,8 +264,13 @@ def hybrid_keyword_score(user_input, user_keywords, synonym_dict):
     return base_score + bonus_score
 
 #上記で作成したマッチングルールを適用して"hybrid_score"として一時的なカラムをdfに追加する
-if st.session_state.get("show_result"):
+# if st.session_state.get("show_result"):
     # "hybrid_score" を一時的なスコアとして生成
+
+if st.session_state.get("show_form"):
+
+ if st.button("おすすめ趣味を探す", key="search_button_top", on_click=lambda: st.session_state.update(show_result=True)):
+
     df_unique2["趣味詳細説明文"] = df_unique2["趣味詳細説明文"].fillna("")
     df_unique2["hybrid_score"] = df_unique2["趣味詳細説明文"].astype(str).apply(
         lambda x: hybrid_keyword_score(user_input, user_keywords, synonym_dict)
@@ -277,18 +289,7 @@ if st.session_state.get("show_result"):
     st.session_state["matched_hobbies"] = [TOP1, TOP2, TOP3]
     st.session_state["show_result"] = True
 
-
-    for i, hobby in enumerate(st.session_state["matched_hobbies"], 1):
-        with st.spinner(f"{hobby} の理由を生成中..."):
-            prompt, reason = generate_reason(hobby)
-        with st.container():
-            st.subheader(f"✅ おすすめ {i}：{hobby}")
-            st.write(reason)
-            st.markdown("---")
-
-# print(top_hobbies[["趣味名","hybrid_score"]])
-
-# Open AI API連携　とっきー
+    # Open AI API連携　とっきー
 
 import streamlit as st
 import openai
@@ -298,21 +299,18 @@ from dotenv import load_dotenv
 load_dotenv()  
 from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
-# 正しいマッチング趣味リスト
-# matched_hobbies =  [TOP1, TOP2, TOP3]
-
-# 正しい関数定義
+    
+    
+    # 正しい関数定義
 def generate_reason(hobby):
-    prompt = f"""
-あなたは趣味提案のプロフェッショナルです。
-以下の趣味について、ユーザーに「なるほど！」と思わせるような理由を200文字程度で説明してください。
+     prompt = f"""
+     あなたは趣味提案のプロフェッショナルです。
+     以下の趣味について、ユーザーに「なるほど！」と思わせるような理由を200文字程度で説明してください。
 
-趣味: {hobby}
-理由:
-"""
-    response = client.chat.completions.create(
+    趣味: {hobby}
+    理由:
+    """
+     response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "あなたは親しみやすく、簡潔で納得感のある説明が得意なアドバイザーです。"},
@@ -321,15 +319,66 @@ def generate_reason(hobby):
         temperature=0.7,
         max_tokens=300
     )
+     return prompt,response.choices[0].message.content.strip()
 
-    return prompt,response.choices[0].message.content.strip()
+if st.session_state.get("show_result"):
+    st.markdown("### 🔍 あなたにおすすめの趣味3選")
+     
+    for i, hobby in enumerate(st.session_state["matched_hobbies"], 1):
+       with st.spinner(f"{hobby} の理由を生成中..."):
+            prompt, reason = generate_reason(hobby)
+       with st.container():
+           st.subheader(f"✅ おすすめ {i}：{hobby}")
+           st.write(reason)
+           st.markdown("---")
+
+     # return prompt,response.choices[0].message.content.strip()
+
+
+# print(top_hobbies[["趣味名","hybrid_score"]])
+
+# Open AI API連携　とっきー
+
+#import streamlit as st
+#import openai
+#import os
+#from dotenv import load_dotenv
+
+#load_dotenv()  
+#from openai import OpenAI
+#client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+# 正しいマッチング趣味リスト
+# matched_hobbies =  [TOP1, TOP2, TOP3]
+
+# 正しい関数定義
+#def generate_reason(hobby):
+   # prompt = f"""
+#あなたは趣味提案のプロフェッショナルです。
+#以下の趣味について、ユーザーに「なるほど！」と思わせるような理由を200文字程度で説明してください。
+
+#趣味: {hobby}
+#理由:
+#"""
+   # response = client.chat.completions.create(
+    #    model="gpt-4",
+     #   messages=[
+      #      {"role": "system", "content": "あなたは親しみやすく、簡潔で納得感のある説明が得意なアドバイザーです。"},
+       #     {"role": "user", "content": prompt}
+        #],
+       # temperature=0.7,
+       # max_tokens=300
+   # )
+
+   # return prompt,response.choices[0].message.content.strip()
 
 # 表示部分はこのままでOK！
 # for i, hobby in enumerate(matched_hobbies, 1):
-    # with st.spinner(f"{hobby} の理由を生成中..."):
+    #with st.spinner(f"{hobby} の理由を生成中..."):
         # prompt, reason = generate_reason(hobby)
-    # with st.container():
-        # st.subheader(f"✅ おすすめ {i}：{hobby}")
-        # st.write(reason)
-        # st.markdown("---")
+     #with st.container():
+       # st.subheader(f"✅ おすすめ {i}：{hobby}")
+       # st.write(reason)
+       # st.markdown("---")
 
