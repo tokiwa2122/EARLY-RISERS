@@ -1,9 +1,5 @@
 ﻿streamlit
 openai
-
-load_dotenv
-OpenAI
-
 sqlite3
 SentenceTransformer
 cosine_similarity
